@@ -43,15 +43,22 @@ function is_bot(){
 	$pagename = get_query_var('pagename');
 	$pagename_parent = get_permalink($post->post_parent);
 	$parent = explode('/', $pagename_parent)[3];
-        $host  = $_SERVER['HTTP_HOST'];
+	$pre_parent = explode('/', $pagename_parent)[4];
+    // Если ЛИЦЕНЗИЯ МЧС - включаем вторую родительскую в редирект
+    if($pre_parent == 'licenziya-mchs') {
+        $super_parent = $parent .'/'. $pre_parent;
+    } else {
+        $super_parent = $parent;
+    }
+
+    $host  = $_SERVER['HTTP_HOST'];
 
 // Находим в названии города пробел и заменяем его на _ и подставляем в ссылку
-	$city_name = htmlspecialchars(trim(  $wp_query->query_vars['cityname'] ));
 
 	function white_space_replace( $var_str ){
 
 		$var_out = $var_str;
-		$regexp_find = '/[\s]+/';
+		$regexp_find = '/[\s\'\/]+/';
 		$replace_str = '_';
 
 		if( preg_match($regexp_find, $var_str) ){
@@ -62,37 +69,60 @@ function is_bot(){
 
 
 // Делаем переадресацию на город
+//    $find_att = "/(itr-specialnosti|rabochie-specialnosti)/i";
+//    $find_att = "/(itr-specialnosti|rabochie-specialnosti|licenzii)[\/A-Za-z-_]+/";
+    $find_att = "/(itr-specialnosti|rabochie-specialnosti|licenzii)/i";
+	if( preg_match( $find_att, $parent ) ){
 
-if( preg_match("/(city|itr|rab)/i", $parent) ){
+        $city_name = htmlspecialchars(trim(  $wp_query->query_vars['cityname'] ));
 
-	if( empty( $city_name ) ){
+		if( empty( $city_name ) ){
 
+//		    $check_is_bot = is_bot();
             if ( !is_bot() ) {
             // Записываем данные города в сессию
                 if( !isset($_COOKIE['geot_city_ru']) ){ // Если в сессии нет города
                     $city_name_go = geot_city_name(); // Запрашиваем город по IP
                     $city_name_go = white_space_replace($city_name_go); // Проверяем на пробелы и заменяем
-                    setcookie('geot_city_ru', $city_name_go, time()+144000); // Передаем город в сессию
+                    setcookie('geot_city_ru', $city_name_go, time()+4320000 ); // Передаем город в сессию
                     $link_city = $_COOKIE['geot_city_ru'] . '/';
                 } else {
                     $link_city = $_COOKIE['geot_city_ru'] . '/';
                 }
-
-                $site_url = '/'. $parent .'/'. $pagename .'/'. $link_city; // Формируем новую ссылку по городу /родитель/страница/город
-                header("Location: http://$host/$parent/$pagename/$link_city");// Делаем редирект на новую ссылку
+                if ( !( $pagename == 'licenzii' || $pagename == 'itr-specialnosti' || $pagename == 'rabochie-specialnosti' ) ) {
+                     header("Location: https://$host/$super_parent/$pagename/$link_city"); // Делаем редирект на новую ссылку
+                }
             }
+	    }
+
+        //----------------------------------
+        // Добавляем в title город
+        //
+        function register_my_plugin_extra_replacements() {
+            wpseo_register_var_replacement( '%%showcity%%', 'show_city', 'advanced' );
+        }
+        add_action( 'wpseo_register_extra_replacements', 'register_my_plugin_extra_replacements' );
+        //
+        // Добавляем в title город
+        //----------------------------------
 	}
-}
 
 
 // ПЕРЕАДРЕСАЦИЯ ПО ГОРОДАМ
 //--------------------------------------------------
 
+//
+// ACF Shortcodes
+//-------------------------------------------------------
+
+
+
 	get_header();
-	the_post();
+// <!--# include virtual="/wp-content/themes/foundry/ssi/uncached.php" wait="no" -->
+    the_post();
 
 
-	$thumbnail = false;
+$thumbnail = false;
 	if( has_post_thumbnail() ){
 		$thumbnail = wp_get_attachment_image( get_post_thumbnail_id(), 'full', 0, array('class' => 'background-image') );
 	}
