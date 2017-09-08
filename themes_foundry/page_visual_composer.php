@@ -43,7 +43,7 @@ function is_bot(){
 	$pagename = get_query_var('pagename');
 	$pagename_parent = get_permalink($post->post_parent);
 	$parent = explode('/', $pagename_parent)[3];
-    $host  = $_SERVER['HTTP_HOST'];
+        $host  = $_SERVER['HTTP_HOST'];
 
 // Находим в названии города пробел и заменяем его на _ и подставляем в ссылку
 	$city_name = htmlspecialchars(trim(  $wp_query->query_vars['cityname'] ));
@@ -63,27 +63,26 @@ function is_bot(){
 
 // Делаем переадресацию на город
 
-	if( preg_match("/(city|itr|rab)/i", $parent) ){
+if( preg_match("/(city|itr|rab)/i", $parent) ){
 
-		if( empty( $city_name ) ){
+	if( empty( $city_name ) ){
 
-//		    $check_is_bot = is_bot();
             if ( !is_bot() ) {
             // Записываем данные города в сессию
                 if( !isset($_COOKIE['geot_city_ru']) ){ // Если в сессии нет города
                     $city_name_go = geot_city_name(); // Запрашиваем город по IP
                     $city_name_go = white_space_replace($city_name_go); // Проверяем на пробелы и заменяем
                     setcookie('geot_city_ru', $city_name_go, time()+144000); // Передаем город в сессию
-                    $link_city = $_COOKIE['geot_city_ru'];
+                    $link_city = $_COOKIE['geot_city_ru'] . '/';
                 } else {
-                    $link_city = $_COOKIE['geot_city_ru'];
+                    $link_city = $_COOKIE['geot_city_ru'] . '/';
                 }
 
                 $site_url = '/'. $parent .'/'. $pagename .'/'. $link_city; // Формируем новую ссылку по городу /родитель/страница/город
                 header("Location: http://$host/$parent/$pagename/$link_city");// Делаем редирект на новую ссылку
             }
-	    }
 	}
+}
 
 
 // ПЕРЕАДРЕСАЦИЯ ПО ГОРОДАМ
